@@ -1,0 +1,39 @@
+# Apache IoTDB v2.0.10 validation lab — STOCK profile.
+#
+# This publishes ONLY the client RPC port 6667, exactly what the official
+# apache/iotdb:2.0.10-standalone image exposes. Use it to validate the findings
+# that live on the client port: F-01, F-02, F-05, F-07.
+#
+#   docker compose up -d
+#
+# To ALSO expose the cluster-internal RPC ports (10710 ConfigNode, 10730 DataNode)
+# and validate F-04 / F-09, overlay the internal file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.internal.yml up -d
+#
+# The stock image does NOT publish 10710/10730 and binds them to the node's
+# internal address. A real cluster exposes them to peers by design; the overlay
+# models that cluster-internal trust boundary explicitly.
+services:
+  iotdb:
+    image: apache/iotdb:2.0.10-standalone
+    container_name: iotdb-lab
+    hostname: iotdb-lab
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      - cn_internal_address=iotdb-lab
+      - cn_seed_config_node=iotdb-lab:10710
+      - dn_rpc_address=iotdb-lab
+      - dn_internal_address=iotdb-lab
+      - dn_seed_config_node=iotdb-lab:10710
+    ports:
+      - "6667:6667"      # client RPC — published by the stock standalone image
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/iotdb-lab/6667' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+      start_period: 20s

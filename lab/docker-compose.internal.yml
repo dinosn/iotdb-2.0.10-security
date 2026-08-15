@@ -1,0 +1,19 @@
+# Overlay: additionally publish the cluster-internal RPC ports.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.internal.yml up -d
+#
+# 10710 = ConfigNode internal RPC  (needed for F-09)
+# 10730 = DataNode internal RPC    (needed for F-04)
+#
+# NOTE ON REACHABILITY (important, do not skip): the stock standalone image does
+# NOT publish these ports. They bind to the node's internal address and, in a real
+# deployment, are reachable by cluster peers on the internal network. Exposing them
+# here is an explicit, labelled assumption that models the cluster-internal trust
+# boundary. F-04 and F-09 are therefore rated "Critical, conditional on internal-port
+# reachability" — not "Critical, remote-by-default".
+services:
+  iotdb:
+    ports:
+      - "6667:6667"
+      - "10710:10710"
+      - "10730:10730"
